@@ -56,4 +56,4 @@ On Intel machines, you should be connecting to Apple displays using a regular Th
 
 ### LG UltraFine Displays
 
-LG UltraFine displays don't speak DDC/CI. Their brightness is set over the display's USB connection instead, and the brightness keys do that automatically when you're focused on the UltraFine. This needs the display's USB hub to be connected, which it is over Thunderbolt or USB-C. So far only the UltraFine 5K is recognized; other models need their USB product ID added to `/etc/udev/rules.d/70-omarchy-lg-ultrafine.rules`.
+LG UltraFine displays don't speak DDC/CI. Their brightness is set over the display's USB connection instead, and the brightness keys do that automatically when you're focused on the UltraFine. This needs the display's USB hub to be connected, which it is over Thunderbolt or USB-C. With more than one UltraFine attached the keys do nothing, because the USB controls can't be matched to a particular screen. So far only the UltraFine 5K is recognized; other models need their USB product ID added to `/etc/udev/rules.d/70-omarchy-lg-ultrafine.rules`.

@@ -13,6 +13,12 @@
 # (usage page 0x80) holding the VESA Virtual Controls brightness (page 0x82,
 # usage 0x10) as an unnumbered 6-byte feature report: brightness as a
 # little-endian u32, then a u16 transition time.
+#
+# Nothing ties that device to a monitor: it has no serial number and the EDID
+# serial appears nowhere on the USB side. With one UltraFine attached the
+# device is the display. With several there is no telling which device belongs
+# to the requested monitor, so the command refuses rather than change the
+# brightness of the wrong screen.
 
 import fcntl
 import glob
@@ -30,6 +36,8 @@ REPORT_LEN = 6
 RAW_MIN = 400
 RAW_MAX = 54000
 
+HIDRAW_SYSFS = "/sys/class/hidraw"
+
 HIDIOCSFEATURE = 0x06
 HIDIOCGFEATURE = 0x07
 
@@ -39,8 +47,10 @@ def hid_ioctl(number, length):
     return (3 << 30) | (length << 16) | (ord("H") << 8) | number
 
 
-def find_device():
-    for path in sorted(glob.glob("/sys/class/hidraw/hidraw*")):
+def find_devices():
+    devices = []
+
+    for path in sorted(glob.glob(os.path.join(HIDRAW_SYSFS, "hidraw*"))):
         try:
             with open(os.path.join(path, "device/uevent")) as uevent_file:
                 uevent = uevent_file.read()
@@ -50,9 +60,9 @@ def find_device():
             continue
 
         if f":{LG_VENDOR}:" in uevent and descriptor.startswith(MONITOR_CONTROL):
-            return "/dev/" + os.path.basename(path)
+            devices.append("/dev/" + os.path.basename(path))
 
-    return None
+    return devices
 
 
 def read_raw(fd):
@@ -97,10 +107,14 @@ def main(args):
     if len(args) > 1:
         return 1
 
-    device = find_device()
-    if device is None:
+    devices = find_devices()
+    if not devices:
         print("No LG UltraFine HID device found", file=sys.stderr)
         return 1
+    if len(devices) > 1:
+        print("Several LG UltraFine displays are attached and their HID devices cannot be told apart", file=sys.stderr)
+        return 1
+    device = devices[0]
 
     try:
         fd = os.open(device, os.O_RDWR)
