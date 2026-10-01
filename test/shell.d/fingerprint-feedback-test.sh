@@ -123,8 +123,8 @@ assert(
 
 // Polkit dialog wiring.
 assert(
-  /FingerprintReader \{[^}]*active: root\.dialogVisible && !root\.closing && root\.fingerprintConfigured && !root\.laptopClosed/.test(polkitQml),
-  'polkit watches the reader only while asking, with a sensor enrolled and reachable'
+  /FingerprintReader \{[^}]*active: root\.fingerprintMode && !root\.closing/.test(polkitQml),
+  'polkit watches the reader only while this request holds it'
 )
 assert(/function beginFlow\(\) \{[^}]*fingerprintReader\.clear\(\)/.test(polkitQml), 'each polkit request starts without a stale verdict')
 assert(/function resetSnapshot\(\) \{[^}]*fingerprintReader\.clear\(\)/.test(polkitQml), 'a closed polkit dialog drops its reader state')

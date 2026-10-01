@@ -205,10 +205,12 @@ Item {
   }
 
   // Live reader state while the dialog waits on the sensor. Display only:
-  // authorization is still decided by PAM.
+  // authorization is still decided by PAM. Only in fingerprint mode: then
+  // this request's pam_fprintd holds the reader, so every signal is ours.
+  // Once it falls through to the password another flow may use the reader.
   FingerprintReader {
     id: fingerprintReader
-    active: root.dialogVisible && !root.closing && root.fingerprintConfigured && !root.laptopClosed
+    active: root.fingerprintMode && !root.closing
     onVerdict: function(result) { if (result !== "match") shakeAnimation.restart() }
   }
 
