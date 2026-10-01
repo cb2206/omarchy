@@ -119,6 +119,11 @@ assert(
   'a failed request to stop rendering the desktop under the lock is retried, a bounded number of times'
 )
 assert(
+  /if \(enabled\) \{\s*(?:\/\/.*\s*)?xrayOffRetry\.stop\(\)/.test(serviceQml) &&
+    /id: xrayOffRetry[\s\S]*?onTriggered: \{\s*if \(root\.xrayPurpose !== "" \|\| root\.unlockSeeThrough \|\| root\.lockFadingIn\) return/.test(serviceQml),
+  'a pending retry never stops rendering the desktop under a later fade'
+)
+assert(
   /purpose === "lock" && confirmed && root\.lockRequested && !sessionLock\.locked/.test(serviceQml),
   'the desktop fade-in only applies to a lock whose surfaces do not exist yet'
 )

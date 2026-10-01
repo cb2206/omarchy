@@ -249,8 +249,10 @@ Item {
 
   // Runtime-only Hyprland setting; a config reload restores the default (off).
   function setSessionLockXray(enabled) {
-    if (enabled) xrayOffRetry.attempts = 0
     if (enabled) {
+      // A pending off-retry would cut this fade short.
+      xrayOffRetry.stop()
+      xrayOffRetry.attempts = 0
       xrayOffProc.running = false
       xrayOnProc.running = true
     } else {
@@ -605,6 +607,7 @@ Item {
     interval: 1000
     repeat: false
     onTriggered: {
+      if (root.xrayPurpose !== "" || root.unlockSeeThrough || root.lockFadingIn) return
       attempts += 1
       root.setSessionLockXray(false)
     }
