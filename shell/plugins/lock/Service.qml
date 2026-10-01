@@ -853,9 +853,10 @@ Item {
         requested: root.lockRequested,
         pending: root.pendingSessionLock,
         sessionLocked: sessionLock.locked,
-        // Not secure while still fading in over the desktop: the sleep path
-        // waits on this, so a suspend never catches the lock see-through.
-        secure: sessionLock.secure && !root.lockFadingIn,
+        // Not secure while fading in over the desktop or out to it on unlock:
+        // the sleep path waits on this, so a suspend never catches the lock
+        // see-through. After an unlock it locks again.
+        secure: sessionLock.secure && !root.lockFadingIn && !root.unlocking,
         realScreens: root.realScreenCount(),
         passwordPam: root.passwordPamConfigured,
         fingerprint: root.fingerprintConfigured,

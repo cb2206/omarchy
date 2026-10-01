@@ -111,8 +111,8 @@ assert(
 // sleep path waits on that), and only for surfaces created after Hyprland
 // confirmed it renders the desktop underneath.
 assert(
-  /secure: sessionLock\.secure && !root\.lockFadingIn,/.test(serviceQml),
-  'the lock is not reported secure while it is still see-through'
+  /secure: sessionLock\.secure && !root\.lockFadingIn && !root\.unlocking,/.test(serviceQml),
+  'the lock is not reported secure while fading in or out over the desktop'
 )
 assert(
   /purpose === "lock" && confirmed && root\.lockRequested && !sessionLock\.locked/.test(serviceQml),
