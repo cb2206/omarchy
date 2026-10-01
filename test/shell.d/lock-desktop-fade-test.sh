@@ -115,6 +115,10 @@ assert(
   'the lock is not reported secure while fading in or out over the desktop'
 )
 assert(
+  /id: xrayOffProc[\s\S]*?if \(xrayOffRetry\.attempts < 3\) xrayOffRetry\.restart\(\)/.test(serviceQml),
+  'a failed request to stop rendering the desktop under the lock is retried, a bounded number of times'
+)
+assert(
   /purpose === "lock" && confirmed && root\.lockRequested && !sessionLock\.locked/.test(serviceQml),
   'the desktop fade-in only applies to a lock whose surfaces do not exist yet'
 )

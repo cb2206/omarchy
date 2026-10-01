@@ -249,6 +249,7 @@ Item {
 
   // Runtime-only Hyprland setting; a config reload restores the default (off).
   function setSessionLockXray(enabled) {
+    if (enabled) xrayOffRetry.attempts = 0
     if (enabled) {
       xrayOffProc.running = false
       xrayOnProc.running = true
@@ -584,6 +585,29 @@ Item {
   Process {
     id: xrayOffProc
     command: ["hyprctl", "eval", "hl.config({ misc = { session_lock_xray = false } })"]
+    stdout: StdioCollector { id: xrayOffStdout; waitForEnd: true }
+    onExited: function(exitCode) {
+      if (exitCode === 0 && String(xrayOffStdout.text || "").trim() === "ok") {
+        xrayOffRetry.attempts = 0
+        return
+      }
+      // Left on, Hyprland keeps rendering the desktop under every later lock.
+      // The lock stays opaque, but that is wasted work for the whole lock, so
+      // try again a few times unless xray is wanted again by now.
+      if (root.xrayPurpose !== "" || root.unlockSeeThrough || root.lockFadingIn) return
+      if (xrayOffRetry.attempts < 3) xrayOffRetry.restart()
+    }
+  }
+
+  Timer {
+    id: xrayOffRetry
+    property int attempts: 0
+    interval: 1000
+    repeat: false
+    onTriggered: {
+      attempts += 1
+      root.setSessionLockXray(false)
+    }
   }
 
   // Bounds the lock fade-in should a view never report it finished: snap the
