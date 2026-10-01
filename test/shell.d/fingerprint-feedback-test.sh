@@ -8,6 +8,7 @@ run_node_test <<'JS'
 const fs = require('fs')
 const readerQml = fs.readFileSync(path.join(root, 'shell/Ui/FingerprintReader.qml'), 'utf8')
 const lockQml = fs.readFileSync(path.join(root, 'shell/plugins/lock/Service.qml'), 'utf8')
+const polkitQml = fs.readFileSync(path.join(root, 'shell/plugins/polkit/PolkitAgent.qml'), 'utf8')
 
 // Pull a top-level QML function out of the reader so it can run against a
 // stand-in for the reader's properties.
@@ -118,5 +119,17 @@ assert(/onFingerLanded: root\.runWake\(\)/.test(lockQml), 'a finger on the senso
 assert(
   /readonly property string fingerprintState: fingerprintConfigured \? fingerprintReader\.readerState : "idle"/.test(lockQml),
   'the lock shows reader state only with an enrolled finger'
+)
+
+// Polkit dialog wiring.
+assert(
+  /FingerprintReader \{[^}]*active: root\.dialogVisible && !root\.closing && root\.fingerprintConfigured && !root\.laptopClosed/.test(polkitQml),
+  'polkit watches the reader only while asking, with a sensor enrolled and reachable'
+)
+assert(/function beginFlow\(\) \{[^}]*fingerprintReader\.clear\(\)/.test(polkitQml), 'each polkit request starts without a stale verdict')
+assert(/function resetSnapshot\(\) \{[^}]*fingerprintReader\.clear\(\)/.test(polkitQml), 'a closed polkit dialog drops its reader state')
+assert(
+  /onVerdict: function\(result\) \{ if \(result !== "match"\) shakeAnimation\.restart\(\) \}/.test(polkitQml),
+  'a rejected read shakes the polkit card'
 )
 JS
