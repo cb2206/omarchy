@@ -123,13 +123,22 @@ assert(
 
 // Polkit dialog wiring.
 assert(
-  /FingerprintReader \{[^}]*active: root\.fingerprintMode && !root\.closing/.test(polkitQml),
+  /readonly property bool holdsReader: fingerprintMode && !closing/.test(polkitQml) &&
+    /FingerprintReader \{[^}]*active: root\.holdsReader \|\| root\.awaitingVerdict/.test(polkitQml),
   'polkit watches the reader only while this request holds it'
 )
+assert(
+  /onFingerLanded: if \(root\.holdsReader\) root\.awaitingVerdict = true/.test(polkitQml) &&
+    /if \(!holdsReader && awaitingVerdict\) verdictGraceTimer\.restart\(\)/.test(polkitQml) &&
+    /id: verdictGraceTimer\s+interval: 500/.test(polkitQml),
+  'polkit keeps listening briefly for the verdict of a read under way when it lets the reader go'
+)
+assert(/onVerdict: function\(result\) \{\s+root\.awaitingVerdict = false/.test(polkitQml), 'the verdict ends the grace window')
+assert(/function beginFlow\(\) \{[^}]*awaitingVerdict = false/.test(polkitQml), 'a new polkit request drops any pending grace window')
 assert(/function beginFlow\(\) \{[^}]*fingerprintReader\.clear\(\)/.test(polkitQml), 'each polkit request starts without a stale verdict')
 assert(/function resetSnapshot\(\) \{[^}]*fingerprintReader\.clear\(\)/.test(polkitQml), 'a closed polkit dialog drops its reader state')
 assert(
-  /onVerdict: function\(result\) \{ if \(result !== "match"\) shakeAnimation\.restart\(\) \}/.test(polkitQml),
+  /onVerdict: function\(result\) \{[^}]*if \(result !== "match"\) shakeAnimation\.restart\(\)/.test(polkitQml),
   'a rejected read shakes the polkit card'
 )
 JS

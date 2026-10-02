@@ -91,6 +91,7 @@ Item {
   }
 
   function resetSnapshot() {
+    awaitingVerdict = false
     fingerprintReader.clear()
     currentMessage = ""
     currentPrompt = ""
@@ -119,6 +120,7 @@ Item {
 
   function beginFlow() {
     closeTimer.stop()
+    awaitingVerdict = false
     fingerprintReader.clear()
     closing = false
     submitted = false
@@ -204,14 +206,37 @@ Item {
     onExited: root.laptopClosed = String(laptopClosedOut.text || "").trim() === "closed"
   }
 
+  // pam_fprintd moves on as soon as it gets the final VerifyStatus, and the
+  // monitor reads the same signal through a pipe, so the verdict can land
+  // just after fingerprint mode ends. A read under way keeps the monitor
+  // listening for its verdict, for at most a moment once the reader is let go.
+  readonly property bool holdsReader: fingerprintMode && !closing
+  property bool awaitingVerdict: false
+
+  onHoldsReaderChanged: {
+    if (!holdsReader && awaitingVerdict) verdictGraceTimer.restart()
+    else verdictGraceTimer.stop()
+  }
+
+  Timer {
+    id: verdictGraceTimer
+    interval: 500
+    repeat: false
+    onTriggered: root.awaitingVerdict = false
+  }
+
   // Live reader state while the dialog waits on the sensor. Display only:
   // authorization is still decided by PAM. Only in fingerprint mode: then
   // this request's pam_fprintd holds the reader, so every signal is ours.
   // Once it falls through to the password another flow may use the reader.
   FingerprintReader {
     id: fingerprintReader
-    active: root.fingerprintMode && !root.closing
-    onVerdict: function(result) { if (result !== "match") shakeAnimation.restart() }
+    active: root.holdsReader || root.awaitingVerdict
+    onFingerLanded: if (root.holdsReader) root.awaitingVerdict = true
+    onVerdict: function(result) {
+      root.awaitingVerdict = false
+      if (result !== "match") shakeAnimation.restart()
+    }
   }
 
   PolkitAgent {
